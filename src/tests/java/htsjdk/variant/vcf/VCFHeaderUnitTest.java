@@ -32,6 +32,8 @@ import htsjdk.tribble.readers.LineIteratorImpl;
 import htsjdk.tribble.readers.LineReaderUtil;
 import htsjdk.variant.VariantBaseTest;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -131,6 +133,20 @@ public class VCFHeaderUnitTest extends VariantBaseTest {
         final VCFHeader header = (VCFHeader) codec.readHeader(vcfIterator).getHeaderValue();
     }
 
+    @Test
+    public void testVCFHeaderAddMetaDataLine() {
+        File input = new File("testdata/htsjdk/variant/ex2.vcf");
+
+        VCFFileReader reader = new VCFFileReader(input, false);
+        VCFHeader header = reader.getFileHeader();
+
+        VCFInfoHeaderLine newInfoField = new VCFInfoHeaderLine("test", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "test info field");
+        header.addMetaDataLine(newInfoField);
+
+        // getting the sequence dictionary was failing due to duplicating contigs in issue #214,
+        // as long as we have no exception then we pass this test
+        header.getSequenceDictionary();
+    }
     /**
      * a little utility function for all tests to md5sum a file
      * Shameless taken from:

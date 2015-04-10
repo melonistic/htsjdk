@@ -174,8 +174,7 @@ public class VCFHeader {
      * existing header line is replaced.
      */
     public void addMetaDataLine(final VCFHeaderLine headerLine) {
-        mMetaData.add(headerLine);
-        loadMetaDataMaps();
+        addMetadataHeaderLine(headerLine);
     }
 
     /**
@@ -185,27 +184,27 @@ public class VCFHeader {
         return Collections.unmodifiableList(contigMetaData);
     }
 
-	/**
-	 * Returns the contigs in this VCF file as a SAMSequenceDictionary. Returns null if contigs lines are
-	 * not present in the header. Throws SAMException if one or more contig lines do not have length
-	 * information.
-	 */
-	public SAMSequenceDictionary getSequenceDictionary() {
-		final List<VCFContigHeaderLine> contigHeaderLines = this.getContigLines();
-		if (contigHeaderLines.isEmpty()) return null;
+    /**
+     * Returns the contigs in this VCF file as a SAMSequenceDictionary. Returns null if contigs lines are
+     * not present in the header. Throws SAMException if one or more contig lines do not have length
+     * information.
+     */
+    public SAMSequenceDictionary getSequenceDictionary() {
+        final List<VCFContigHeaderLine> contigHeaderLines = this.getContigLines();
+        if (contigHeaderLines.isEmpty()) return null;
 
-		final List<SAMSequenceRecord> sequenceRecords = new ArrayList<SAMSequenceRecord>(contigHeaderLines.size());
-		for (final VCFContigHeaderLine contigHeaderLine : contigHeaderLines) {
-			sequenceRecords.add(contigHeaderLine.getSAMSequenceRecord());
-		}
+        final List<SAMSequenceRecord> sequenceRecords = new ArrayList<SAMSequenceRecord>(contigHeaderLines.size());
+        for (final VCFContigHeaderLine contigHeaderLine : contigHeaderLines) {
+            sequenceRecords.add(contigHeaderLine.getSAMSequenceRecord());
+        }
 
-		return new SAMSequenceDictionary(sequenceRecords);
-	}
+        return new SAMSequenceDictionary(sequenceRecords);
+    }
 
-	/**
-	 * Completely replaces the contig records in this header with those in the given SAMSequenceDictionary.
-	 */
-	public void setSequenceDictionary(final SAMSequenceDictionary dictionary) {
+    /**
+     * Completely replaces the contig records in this header with those in the given SAMSequenceDictionary.
+     */
+    public void setSequenceDictionary(final SAMSequenceDictionary dictionary) {
         this.contigMetaData.clear();
 
         // Also need to remove contig record lines from mMetaData
@@ -223,9 +222,9 @@ public class VCFHeader {
         this.mMetaData.addAll(contigMetaData);
     }
 
-	public VariantContextComparator getVCFRecordComparator() {
-		return new VariantContextComparator(this.getContigLines());
-	}
+    public VariantContextComparator getVCFRecordComparator() {
+        return new VariantContextComparator(this.getContigLines());
+    }
 
     /**
      * @return all of the VCF FILTER lines in their original file order, or an empty list if none were present
@@ -273,29 +272,36 @@ public class VCFHeader {
      */
     private void loadMetaDataMaps() {
         for (final VCFHeaderLine line : mMetaData) {
-            if ( line instanceof VCFInfoHeaderLine )  {
-                final VCFInfoHeaderLine infoLine = (VCFInfoHeaderLine)line;
-                addMetaDataMapBinding(mInfoMetaData, infoLine);
-            } else if ( line instanceof VCFFormatHeaderLine ) {
-                final VCFFormatHeaderLine formatLine = (VCFFormatHeaderLine)line;
-                addMetaDataMapBinding(mFormatMetaData, formatLine);
-            } else if ( line instanceof VCFFilterHeaderLine ) {
-                final VCFFilterHeaderLine filterLine = (VCFFilterHeaderLine)line;
-                mFilterMetaData.put(filterLine.getID(), filterLine);
-            } else if ( line instanceof VCFContigHeaderLine ) {
-                contigMetaData.add((VCFContigHeaderLine)line);
-            } else {
-                mOtherMetaData.put(line.getKey(), line);
-            }
+            addMetadataHeaderLine(line);
         }
+    }
 
-        if ( hasFormatLine(VCFConstants.GENOTYPE_LIKELIHOODS_KEY) && ! hasFormatLine(VCFConstants.GENOTYPE_PL_KEY) ) {
-            if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
-                System.err.println("Found " + VCFConstants.GENOTYPE_LIKELIHOODS_KEY + " format, but no "
-                                   + VCFConstants.GENOTYPE_PL_KEY + " field.  We now only manage PL fields internally"
-                                   + " automatically adding a corresponding PL field to your VCF header");
+    /**
+     * add a single header line to the appropriate map/list depending on its type
+     */
+    private void addMetadataHeaderLine(final VCFHeaderLine line) {
+        if ( line instanceof VCFInfoHeaderLine )  {
+            final VCFInfoHeaderLine infoLine = (VCFInfoHeaderLine)line;
+            addMetaDataMapBinding(mInfoMetaData, infoLine);
+        } else if ( line instanceof VCFFormatHeaderLine ) {
+            final VCFFormatHeaderLine formatLine = (VCFFormatHeaderLine)line;
+            addMetaDataMapBinding(mFormatMetaData, formatLine);
+
+            if ( hasFormatLine(VCFConstants.GENOTYPE_LIKELIHOODS_KEY) && ! hasFormatLine(VCFConstants.GENOTYPE_PL_KEY) ) {
+                if ( GeneralUtils.DEBUG_MODE_ENABLED ) {
+                    System.err.println("Found " + VCFConstants.GENOTYPE_LIKELIHOODS_KEY + " format, but no "
+                            + VCFConstants.GENOTYPE_PL_KEY + " field.  We now only manage PL fields internally"
+                            + " automatically adding a corresponding PL field to your VCF header");
+                }
+                addMetaDataLine(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY, VCFHeaderLineCount.G, VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
             }
-            addMetaDataLine(new VCFFormatHeaderLine(VCFConstants.GENOTYPE_PL_KEY, VCFHeaderLineCount.G, VCFHeaderLineType.Integer, "Normalized, Phred-scaled likelihoods for genotypes as defined in the VCF specification"));
+        } else if ( line instanceof VCFFilterHeaderLine ) {
+            final VCFFilterHeaderLine filterLine = (VCFFilterHeaderLine)line;
+            mFilterMetaData.put(filterLine.getID(), filterLine);
+        } else if ( line instanceof VCFContigHeaderLine ) {
+            contigMetaData.add((VCFContigHeaderLine)line);
+        } else {
+            mOtherMetaData.put(line.getKey(), line);
         }
     }
 
