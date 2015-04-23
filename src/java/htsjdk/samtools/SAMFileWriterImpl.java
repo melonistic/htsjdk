@@ -37,8 +37,8 @@ import java.io.StringWriter;
  */
 public abstract class SAMFileWriterImpl implements SAMFileWriter
 {
-    private static int DEAFULT_MAX_RECORDS_IN_RAM = 500000;      
-    private int maxRecordsInRam = DEAFULT_MAX_RECORDS_IN_RAM;
+    private static int DEFAULT_MAX_RECORDS_IN_RAM = 500000;
+    private int maxRecordsInRam = DEFAULT_MAX_RECORDS_IN_RAM;
     private SAMFileHeader.SortOrder sortOrder;
     private SAMFileHeader header;
     private SortingCollection<SAMRecord> alignmentSorter;
@@ -59,16 +59,16 @@ public abstract class SAMFileWriterImpl implements SAMFileWriter
      * @param maxRecordsInRam
      */
     public static void setDefaultMaxRecordsInRam(final int maxRecordsInRam) {
-        DEAFULT_MAX_RECORDS_IN_RAM = maxRecordsInRam;    
+        DEFAULT_MAX_RECORDS_IN_RAM = maxRecordsInRam;
     }
     
     /**
      * When writing records that are not presorted, this number determines the 
      * number of records stored in RAM before spilling to disk.
-     * @return DEAFULT_MAX_RECORDS_IN_RAM 
+     * @return DEFAULT_MAX_RECORDS_IN_RAM
      */
     public static int getDefaultMaxRecordsInRam() {
-        return DEAFULT_MAX_RECORDS_IN_RAM;    
+        return DEFAULT_MAX_RECORDS_IN_RAM;
     }
 
     /**
